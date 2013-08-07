@@ -27,7 +27,7 @@ class InitialP2Streaming(object):
 
         self.full_markers = False
         self.markers = []
-        self.postions = [1,2,3,4,5]
+        self.positions = [1.,2.,3.,4.,5.]
 
     def setup_markers(self):
         marker_positions = [
@@ -53,10 +53,10 @@ class InitialP2Streaming(object):
         
     def add(self, data_point):
         if not self.full_markers:
-            self.markers.append(data_point)
+            self.markers.append(float(data_point))
 
             if len(self.markers) == 5:
-                self.full_markers.sort()
+                self.markers.sort()
                 self.full_markers = True
         else:
 
@@ -69,7 +69,10 @@ class InitialP2Streaming(object):
                 if abs(self.positions[i] - desired_marker_position) > 1:
                     d = float(cmp(self.positions[i], desired_marker_position))
                     self.markers[i] += self.height_delta(i)
-                    self.postions[i] += d
+                    self.positions[i] += d
+
+            self.positions[0] = min(self.positions[0], data_point)
+            self.positions[4] = max(self.positions[4], data_point)
 
     def height_delta(self, i, d = 1.):
         p2 = self.parabolic_prediction(i, d)
@@ -88,8 +91,13 @@ class InitialP2Streaming(object):
     def parabolic_prediction(self, i, d = 1.):
         n = self.positions
         q = self.markers
+        d = float(d)
 
-        return d / (n[i+1] - n[i-1]) * ((n[i] - n[i-1] + d) * ((q[i+1] - q[i]) / (n[i+1] - n[i])) + (n[i+1] - n[i] - d) * ((q[i] - q[i-1]) / (n[i] - n[i-1])))
+        # this is almost certain to be wrong
+        try:
+            return d / (n[i+1] - n[i-1]) * ((n[i] - n[i-1] + d) * ((q[i+1] - q[i]) / (n[i+1] - n[i])) + (n[i+1] - n[i] - d) * ((q[i] - q[i-1]) / (n[i] - n[i-1])))
+        except ZeroDivisionError:
+            return 0.
            
     def desired_marker_positions(self):
         return map(self.desired_marker_position, range(5))
